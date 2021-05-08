@@ -116,10 +116,12 @@ int main(int argc, char **argv){
 
     typedef message_filters::sync_policies::ApproximateTime <robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed> MySyncPolicy;
     message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), MS_fl, MS_fr, MS_rl, MS_rr);
-    //message_filters::TimeSynchronizer<robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed, nav_msgs::Odometry> sync(MS_fl, MS_fr, MS_rl, MS_rr, scout_odom, 10);
     sync.registerCallback(boost::bind(&velocities_Calculus, _1, _2, _3, _4));
 
-    //velocities_node.publish(velocities);
+    //message_filters::TimeSynchronizer<robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed, nav_msgs::Odometry> sync(MS_fl, MS_fr, MS_rl, MS_rr, scout_odom, 10);
+    //sync.registerCallback(boost::bind(&calibrate_app_baseline, _1, _2, _3, _4, _5));
+
+
     ros::spin();
 
     return 0;

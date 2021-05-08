@@ -13,7 +13,14 @@ find_package(catkin REQUIRED COMPONENTS
   robotics_hw1
   roscpp
   std_msgs
+  dynamic_reconfigure
+  tf
 )
+
+generate_dynamic_reconfigure_options(
+  cfg/parameters.cfg
+)
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -136,6 +143,8 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
  add_executable(velocities_node src/velocities_node.cpp)
+ add_executable(odom_node src/odom_node.cpp)
+ 	add_dependencies(odom_node ${PROJECT_NAME}_gencfg)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -149,6 +158,7 @@ include_directories(
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(velocities_node ${catkin_LIBRARIES} )
+ target_link_libraries(odom_node ${catkin_LIBRARIES} )
 
 #############
 ## Install ##
