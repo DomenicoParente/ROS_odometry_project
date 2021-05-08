@@ -1,0 +1,2 @@
+nav_msgs/Odometry odometry
+string integration_type
