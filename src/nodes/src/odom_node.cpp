@@ -80,10 +80,18 @@ void odomCalculus(const geometry_msgs::TwistStampedConstPtr& vel ){
         custom_odom.integration_type="rk";
     }
 
-
     //publish messages
     odom_pub.publish(odometry);
     cu_odom_pub.publish(custom_odom);
+
+    //tf publication
+    tf::TransformBroadcaster br;
+    tf::Transform transform;
+    transform.setOrigin( tf::Vector3(x, y, 0) );
+    tf::Quaternion q;
+    q.setRPY(0, 0, theta);
+    transform.setRotation(q);
+    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "robot"));
 }
 
 
