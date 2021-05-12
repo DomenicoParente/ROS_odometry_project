@@ -7,7 +7,8 @@
 #include "custom_odometry/customOdometry.h"
 #include "dynamic_reconfigure/server.h"
 #include "nodes/parametersConfig.h"
-#include <tf/transform_broadcaster.h>
+#include "tf/transform_broadcaster.h"
+#include "geometry_msgs/Quaternion.h"
 #include "string.h"
 #include "math.h"
 
@@ -54,15 +55,30 @@ void odomCalculus(const geometry_msgs::TwistStampedConstPtr& vel ){
         theta+= w * Ts;
     }
 
+    ROS_INFO("x: %f - y: %f",x,y);
+
+    // creation tf message
+    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(theta);
+
+    geometry_msgs::TransformStamped odom_trans;
+    odom_trans.header.stamp = ros::Time::now();
+    odom_trans.header.frame_id = "odom";
+    odom_trans.child_frame_id = "base_link";
+    odom_trans.transform.translation.x = x;
+    odom_trans.transform.translation.y = y;
+    odom_trans.transform.translation.z = 0.0;
+    odom_trans.transform.rotation = odom_quat;
+
+
     //creation odometry message
     nav_msgs::Odometry odometry;
     odometry.header.stamp=ros::Time::now();
-    odometry.header.frame_id="odometry";
+    odometry.header.frame_id="odom";
 
     odometry.pose.pose.position.x=x;
     odometry.pose.pose.position.y=y;
     odometry.pose.pose.position.z=0.0;
-    odometry.pose.pose.orientation= tf::createQuaternionMsgFromYaw(theta);;
+    odometry.pose.pose.orientation= odom_quat;
 
     odometry.twist.twist.linear.x=Vk;
     odometry.twist.twist.linear.y=0.0;
@@ -84,14 +100,15 @@ void odomCalculus(const geometry_msgs::TwistStampedConstPtr& vel ){
     odom_pub.publish(odometry);
     cu_odom_pub.publish(custom_odom);
 
-    //tf publication
+    //send the transform
     tf::TransformBroadcaster br;
     tf::Transform transform;
     transform.setOrigin( tf::Vector3(x, y, 0) );
     tf::Quaternion q;
     q.setRPY(0, 0, theta);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "robot"));
+    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "odom", "base_link"));//
+
 }
 
 
@@ -113,7 +130,7 @@ int main(int argc, char **argv){
     ROS_INFO("STATE: OK");
     odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
     cu_odom_pub = n.advertise<custom_odometry::customOdometry>("custom_odom", 50);
-    vel_sub = n.subscribe("vel_subscriber", 1000, odomCalculus);
+    vel_sub = n.subscribe("velocities", 1000, odomCalculus);
 
     //set server for dynamic reconfigure
     dynamic_reconfigure::Server<nodes::parametersConfig> server;

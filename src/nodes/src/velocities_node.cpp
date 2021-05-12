@@ -18,7 +18,7 @@ const float WHEEL_RADIUS= 0.1575;
 const float REAL_BASELINE= 0.583;
 const float APPARENT_BASELINE= 1.0;
 const double PI= 3.14159265;
-const double GEAR_REDUCTION= 0.033333333333;
+const double GEAR_REDUCTION= 0.024969385;
 
 ros::Publisher velocities_pub;
 
@@ -37,9 +37,9 @@ void velocities_Calculus(const robotics_hw1::MotorSpeedConstPtr& fl,
     double v_fl, v_fr, v_rl, v_rr;
     double  Vr,Vl;
     double Vk,Wz;
-    v_fr= Reduction_gearbox( RPM_converter(fl->rpm) ) * WHEEL_RADIUS;
+    v_fl= - Reduction_gearbox( RPM_converter(fl->rpm) ) * WHEEL_RADIUS;
     v_fr= Reduction_gearbox( RPM_converter(fr->rpm) ) * WHEEL_RADIUS;
-    v_rl= Reduction_gearbox( RPM_converter(rl->rpm) ) * WHEEL_RADIUS;
+    v_rl= - Reduction_gearbox( RPM_converter(rl->rpm) ) * WHEEL_RADIUS;
     v_rr= Reduction_gearbox( RPM_converter(rr->rpm) ) * WHEEL_RADIUS;
 
     Vl=(v_fl + v_rl)/2;
@@ -88,16 +88,36 @@ void calibrate_app_baseline(const robotics_hw1::MotorSpeed::ConstPtr& fl,
     double v_fl, v_fr, v_rl, v_rr;
     double  Vr,Vl;
     double app_baseline;
-    v_fl= Reduction_gearbox( RPM_converter(fl->rpm) ) * WHEEL_RADIUS;
+    v_fl= - Reduction_gearbox( RPM_converter(fl->rpm) ) * WHEEL_RADIUS;
     v_fr= Reduction_gearbox( RPM_converter(fr->rpm) ) * WHEEL_RADIUS;
-    v_rl= Reduction_gearbox( RPM_converter(rl->rpm) ) * WHEEL_RADIUS;
+    v_rl= - Reduction_gearbox( RPM_converter(rl->rpm) ) * WHEEL_RADIUS;
     v_rr= Reduction_gearbox( RPM_converter(rr->rpm) ) * WHEEL_RADIUS;
 
     Vl=(v_fl + v_rl)/2;
     Vr=(v_fr + v_rr)/2;
     wz= scout_odom->twist.twist.angular.z;
     app_baseline= (Vr - Vl)/2*wz;
-    ROS_INFO("%f", app_baseline);
+    ROS_INFO("Apparent baseline: %f", app_baseline);
+}
+
+// calculate gear reduction
+void calc_gear_reduction(const robotics_hw1::MotorSpeed::ConstPtr& fl,
+                            const robotics_hw1::MotorSpeed::ConstPtr& fr,
+                            const robotics_hw1::MotorSpeed::ConstPtr& rl,
+                            const robotics_hw1::MotorSpeed::ConstPtr& rr,
+                            const nav_msgs::Odometry::ConstPtr& scout_odom){
+    double v_fl, v_fr, v_rl, v_rr,v_odom;
+    double  Vr, Vl, V, gr;
+    v_fl= -( RPM_converter(fl->rpm) ) * WHEEL_RADIUS;
+    v_fr= ( RPM_converter(fr->rpm) ) * WHEEL_RADIUS;
+    v_rl= -( RPM_converter(rl->rpm) ) * WHEEL_RADIUS;
+    v_rr= ( RPM_converter(rr->rpm) ) * WHEEL_RADIUS;
+    v_odom= scout_odom->twist.twist.linear.x;
+    Vl=(v_fl + v_rl)/2;
+    Vr=(v_fr + v_rr)/2;
+    V= (Vl+Vr)/2;
+    gr=v_odom/V;
+    ROS_INFO("Gearbox reduction: %f", gr);
 }
 
 int main(int argc, char **argv){
@@ -111,16 +131,18 @@ int main(int argc, char **argv){
     message_filters::Subscriber<robotics_hw1::MotorSpeed> MS_fr(n, "motor_speed_fr", 1);
     message_filters::Subscriber<robotics_hw1::MotorSpeed> MS_rl(n, "motor_speed_rl", 1);
     message_filters::Subscriber<robotics_hw1::MotorSpeed> MS_rr(n, "motor_speed_rr", 1);
-    //message_filters::Subscriber<nav_msgs::Odometry> Odom(n, "scout_odom", 1);
+    message_filters::Subscriber<nav_msgs::Odometry> scout_odom(n, "scout_odom", 1);
     //message_filters::Subscriber<geometry_msgs::PoseStamped> Pose(n, "gt_pose", 1);
 
-    typedef message_filters::sync_policies::ApproximateTime <robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed> MySyncPolicy;
-    message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), MS_fl, MS_fr, MS_rl, MS_rr);
-    sync.registerCallback(boost::bind(&velocities_Calculus, _1, _2, _3, _4));
+    //typedef message_filters::sync_policies::ApproximateTime <robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed> MySyncPolicy;
+    //message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), MS_fl, MS_fr, MS_rl, MS_rr);
+    //sync.registerCallback(boost::bind(&velocities_Calculus, _1, _2, _3, _4));
 
     //message_filters::TimeSynchronizer<robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed, nav_msgs::Odometry> sync(MS_fl, MS_fr, MS_rl, MS_rr, scout_odom, 10);
     //sync.registerCallback(boost::bind(&calibrate_app_baseline, _1, _2, _3, _4, _5));
 
+    message_filters::TimeSynchronizer<robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed, nav_msgs::Odometry> sync(MS_fl, MS_fr, MS_rl, MS_rr, scout_odom, 10);
+    sync.registerCallback(boost::bind(&calc_gear_reduction, _1, _2, _3, _4, _5));
 
     ros::spin();
 

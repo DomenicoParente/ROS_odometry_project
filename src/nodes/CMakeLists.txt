@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   dynamic_reconfigure
   tf
+  tf2
+  tf2_ros
 )
 
 generate_dynamic_reconfigure_options(
