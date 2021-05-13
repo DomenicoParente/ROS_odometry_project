@@ -6,7 +6,7 @@
 #include "nav_msgs/Odometry.h"
 #include "custom_odometry/customOdometry.h"
 #include "dynamic_reconfigure/server.h"
-#include "nodes/parametersConfig.h"
+#include "nodes/integration_paramConfig.h"
 #include "tf/transform_broadcaster.h"
 #include "geometry_msgs/Quaternion.h"
 #include "string.h"
@@ -111,8 +111,16 @@ void odomCalculus(const geometry_msgs::TwistStampedConstPtr& vel ){
 
 }
 
+//set initial position
+void set_initial_pos(double pos_x, double pos_y, double theta_angle){
+    x= pos_x;
+    y= pos_y;
+    theta= theta_angle;
+    ROS_INFO("Initial position set");
+}
 
-void dynamicCallback(nodes::parametersConfig &config, uint32_t level) {
+
+void dynamicCallback(nodes::integration_paramConfig &config, uint32_t level) {
     if(config.integration==0){
         odom_type=0;
         ROS_INFO("Changed mode to: Euler integration");
@@ -131,10 +139,17 @@ int main(int argc, char **argv){
     odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
     cu_odom_pub = n.advertise<custom_odometry::customOdometry>("custom_odom", 50);
     vel_sub = n.subscribe("velocities", 1000, odomCalculus);
+    std::double_t pos_x;
+    std::double_t pos_y;
+    std::double_t theta_angle;
+    n.getParam("/position/x",pos_x);
+    n.getParam("/position/y",pos_y);
+    n.getParam("/position/theta",theta_angle);
+    set_initial_pos(pos_x,pos_y,theta_angle);
 
     //set server for dynamic reconfigure
-    dynamic_reconfigure::Server<nodes::parametersConfig> server;
-    dynamic_reconfigure::Server<nodes::parametersConfig>::CallbackType f;
+    dynamic_reconfigure::Server<nodes::integration_paramConfig> server;
+    dynamic_reconfigure::Server<nodes::integration_paramConfig>::CallbackType f;
     f = boost::bind(&dynamicCallback, _1,_2);
     server.setCallback(f);
 

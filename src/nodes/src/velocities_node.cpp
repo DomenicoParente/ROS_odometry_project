@@ -71,7 +71,7 @@ void velocities_Calculus(const robotics_hw1::MotorSpeedConstPtr& fl,
 
 }
 
-/*
+
 // test the callback function
 void test_callback(const robotics_hw1::MotorSpeed::ConstPtr& fl,
                    const robotics_hw1::MotorSpeed::ConstPtr& fr,
@@ -79,7 +79,6 @@ void test_callback(const robotics_hw1::MotorSpeed::ConstPtr& fl,
                    const robotics_hw1::MotorSpeed::ConstPtr& rr){
     ROS_INFO("\n %f - %f \n %f - %f", fl->rpm, fr->rpm, rl->rpm, rr->rpm);
 }
-*/
 
 // calibrate the apparent baseline
 void calibrate_app_baseline(const robotics_hw1::MotorSpeed::ConstPtr& fl,
