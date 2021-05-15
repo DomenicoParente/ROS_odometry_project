@@ -170,7 +170,6 @@ int main(int argc, char **argv){
     f = boost::bind(&dynamicCallback, _1,_2);
     server.setCallback(f);
 
-
     ros::spin();
 
     return 0;
