@@ -99,6 +99,7 @@ void calibrate_app_baseline(const robotics_hw1::MotorSpeed::ConstPtr& fl,
     Vr=(v_fr + v_rr)/2;
     wz= scout_odom->twist.twist.angular.z;
     app_baseline= (Vr - Vl)/wz;
+    //Welford algorithm
     if(app_baseline >-100 && app_baseline < 100){
         i+=1;
         delta=app_baseline-mean;
@@ -126,6 +127,7 @@ void calc_gear_reduction(const robotics_hw1::MotorSpeed::ConstPtr& fl,
     Vr=(v_fr + v_rr)/2;
     V= (Vl+Vr)/2;
     gr=v_odom/V;
+    //Welford algorithm
     if(gr >0 && gr < 100){
         i+=1;
         delta=gr-mean;

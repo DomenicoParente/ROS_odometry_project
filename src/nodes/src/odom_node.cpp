@@ -9,6 +9,8 @@
 #include "nodes/integration_paramConfig.h"
 #include "tf/transform_broadcaster.h"
 #include "geometry_msgs/Quaternion.h"
+#include "nodes/Reset0.h"
+#include "nodes/ResetPos.h"
 #include "string.h"
 #include "math.h"
 
@@ -20,6 +22,7 @@ double theta=0.0;
 double t=0.0;
 
 int odom_type;
+tf::TransformBroadcaster *br;
 ros::Publisher odom_pub;
 ros::Publisher cu_odom_pub;
 ros::Subscriber vel_sub;
@@ -51,7 +54,7 @@ void odomCalculus(const geometry_msgs::TwistStampedConstPtr& vel ){
     //computation Runge-Kutta Integration
     else{
         x+= Vk * Ts * cos(theta + (w * Ts)/2 );
-        y+= Vk * Ts * cos(theta + (w * Ts)/2 );
+        y+= Vk * Ts * sin(theta + (w * Ts)/2 );
         theta+= w * Ts;
     }
 
@@ -59,16 +62,6 @@ void odomCalculus(const geometry_msgs::TwistStampedConstPtr& vel ){
 
     // creation tf message
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(theta);
-
-    geometry_msgs::TransformStamped odom_trans;
-    odom_trans.header.stamp = ros::Time::now();
-    odom_trans.header.frame_id = "odom";
-    odom_trans.child_frame_id = "base_link";
-    odom_trans.transform.translation.x = x;
-    odom_trans.transform.translation.y = y;
-    odom_trans.transform.translation.z = 0.0;
-    odom_trans.transform.rotation = odom_quat;
-
 
     //creation odometry message
     nav_msgs::Odometry odometry;
@@ -101,13 +94,12 @@ void odomCalculus(const geometry_msgs::TwistStampedConstPtr& vel ){
     cu_odom_pub.publish(custom_odom);
 
     //send the transform
-    tf::TransformBroadcaster br;
     tf::Transform transform;
     transform.setOrigin( tf::Vector3(x, y, 0) );
     tf::Quaternion q;
     q.setRPY(0, 0, theta);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "odom", "base_link"));//
+    br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "odom", "base_link"));
 
 }
 
@@ -119,6 +111,25 @@ void set_initial_pos(double pos_x, double pos_y, double theta_angle){
     ROS_INFO("Initial position set");
 }
 
+bool reset0(nodes::Reset0::Request &req,
+            nodes::Reset0::Response &res){
+    x= 0.0;
+    y= 0.0;
+    theta= 0.0;
+    res.output="The position is set to (0,0,0)";
+    ROS_INFO("Position reset to (0,0,0)");
+    return true;
+}
+
+bool resetPos(nodes::ResetPos::Request  &req,
+              nodes::ResetPos::Response &res){
+    x= req.x;
+    y= req.y;
+    theta= req.theta;
+    res.output="The position is set to the specified position";
+    ROS_INFO("Position reset to (x,y,theta)");
+    return true;
+}
 
 void dynamicCallback(nodes::integration_paramConfig &config, uint32_t level) {
     if(config.integration==0){
@@ -133,25 +144,32 @@ void dynamicCallback(nodes::integration_paramConfig &config, uint32_t level) {
 
 int main(int argc, char **argv){
     ros::init(argc, argv, "odom_node");
-
+    br = new tf::TransformBroadcaster();
     ros::NodeHandle n;
     ROS_INFO("STATE: OK");
     odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
     cu_odom_pub = n.advertise<custom_odometry::customOdometry>("custom_odom", 50);
     vel_sub = n.subscribe("velocities", 1000, odomCalculus);
+
     std::double_t pos_x;
     std::double_t pos_y;
     std::double_t theta_angle;
+    // initialize the position of the robot through the parameters
     n.getParam("/position/x",pos_x);
     n.getParam("/position/y",pos_y);
     n.getParam("/position/theta",theta_angle);
     set_initial_pos(pos_x,pos_y,theta_angle);
 
+    //set server for service to reset to (0,0,0) position
+    ros::ServiceServer service_0 = n.advertiseService("reset0_service", reset0);
+    //set server for service to reset to (x,y,theta) position
+    ros::ServiceServer service_pos = n.advertiseService("resetpos_service", resetPos);
     //set server for dynamic reconfigure
     dynamic_reconfigure::Server<nodes::integration_paramConfig> server;
     dynamic_reconfigure::Server<nodes::integration_paramConfig>::CallbackType f;
     f = boost::bind(&dynamicCallback, _1,_2);
     server.setCallback(f);
+
 
     ros::spin();
 
