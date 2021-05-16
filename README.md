@@ -30,8 +30,8 @@
 		-  if equal to 0 it setup the Euler integration
 		-  if equal to 1 it setup the Runge-Kutta integration
 	- The server of this parameter is in odom_node, so to set it we have to use the following command:
-		- rosrun dynamic_reconfigure dynparam set odom_node 0  //Euler integration
-		- rosrun dynamic_reconfigure dynparam set odom_node 1  //Runge-Kutta integration
+		- rosrun dynamic_reconfigure dynparam set odom_node integration 0  //Euler integration
+		- rosrun dynamic_reconfigure dynparam set odom_node integration 1  //Runge-Kutta integration
 	
 	
 ## Start instructions
