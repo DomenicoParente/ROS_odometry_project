@@ -25,7 +25,7 @@
 	- /position/y : it sets the position on y-axis
 	- /position/theta : it sets the orientation of the robot
 
-Dynamic integration parameter:
+- Dynamic integration parameter:
 	- integration_param : if equal to 0 it setup the Euler integration
 			      if equal to 1 it setup the Runge-Kutta integration
 	The server of this parameter is in odom_node, so to set it we have to use the following command:
