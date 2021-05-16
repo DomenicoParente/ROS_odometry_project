@@ -37,8 +37,6 @@
 ## Start instructions
 - First of all we need to compile the entire project trough:
 	- catkin_make
-	- echo "source ~/devel/setup.bash" >> ~/.bashrc
-	- source ~/.bashrc
 - Run the launch file in /src/nodes/launch through the command:
 	- roslaunch nodes robot.launch
 - Run the bag in /src/bags through the commands:
