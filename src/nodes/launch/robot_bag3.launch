@@ -1,0 +1,7 @@
+<launch>
+	<param name="/position/x" value="-2.28603390243" />
+	<param name="/position/y" value="-1.44419248415" />
+  	<param name="/position/theta" value="-1.823136" />
+	<node pkg="nodes" type="velocities_node" name="velocities_node" output="screen" />
+	<node pkg="nodes" type="odom_node" name="odom_node" output="screen" />
+</launch>

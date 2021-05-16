@@ -10,6 +10,7 @@
 #include "geometry_msgs/TwistStamped.h"
 #include "robotics_hw1/MotorSpeed.h"
 #include "nav_msgs/Odometry.h"
+#include "tf/transform_datatypes.h"
 #include "string.h"
 #include "math.h"
 
@@ -24,6 +25,7 @@ int i=0;
 double mean=0;
 
 ros::Publisher velocities_pub;
+ros::Subscriber scout_sub;
 
 double RPM_converter(double rpm){
     return rpm*2*PI/60;
@@ -136,6 +138,21 @@ void calc_gear_reduction(const robotics_hw1::MotorSpeed::ConstPtr& fl,
     ROS_INFO("Gearbox reduction: %f", mean);
 }
 
+// this function is used to find the initial angle
+/*
+void angle(const nav_msgs::Odometry::ConstPtr& scout_odom){
+    double x= scout_odom->pose.pose.orientation.x;
+    double y= scout_odom->pose.pose.orientation.y;
+    double z= scout_odom->pose.pose.orientation.z;
+    double w= scout_odom->pose.pose.orientation.w;
+    tf::Quaternion q(x, y, z, w);
+    tf::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    ROS_INFO("Roll: %f Pitch: %f Yaw: %f",roll,pitch,yaw);
+}
+*/
+
 int main(int argc, char **argv){
     ros::init(argc, argv, "velocities_node");
     ros::NodeHandle n;
@@ -159,6 +176,8 @@ int main(int argc, char **argv){
 
     //message_filters::TimeSynchronizer<robotics_hw1::MotorSpeed, robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed,robotics_hw1::MotorSpeed, nav_msgs::Odometry> sync(MS_fl, MS_fr, MS_rl, MS_rr, scout_odom, 10);
     //sync.registerCallback(boost::bind(&calc_gear_reduction, _1, _2, _3, _4, _5));
+
+    //scout_sub = n.subscribe("scout_odom", 1000, angle);
 
     ros::spin();
 
